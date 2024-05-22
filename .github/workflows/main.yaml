@@ -1,0 +1,97 @@
+# shared-workflows/.github/workflows/build-and-deploy.yml
+
+name: Build and Deploy
+
+on:
+  workflow_call:
+    inputs:
+      repository:
+        required: true
+        type: string
+      branch:
+        required: true
+        type: string
+      ecr-repository: 
+        required: true
+        type: string
+jobs: 
+  build-applications:
+    name: Build and create artifact
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    - uses: actions/setup-java@v4
+      with:
+        distribution: 'corretto' # See 'Supported distributions' for available options
+        java-version: '17'
+        cache: 'maven'
+
+    - name: Build with Maven
+      run: mvn -B package --file pom.xml
+
+    - name: Upload JAR Artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: sipa-auth
+        path: target/*.jar
+
+  code-evaluation: 
+    name: Security checks
+    runs-on: ubuntu-latest
+    needs: build-applications
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    - name: SonarQube Scan
+      uses: sonarsource/sonarqube-scan-action@v1
+      env:
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        SONAR_HOST_URL: "http://ec2-3-226-198-174.compute-1.amazonaws.com:9000"
+
+  push-to-ecr:
+    name: Push to ECR
+    runs-on: ubuntu-latest
+    needs: code-evaluation
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    - name: Download JAR Artifact
+      uses: actions/download-artifact@v3
+      with:
+        name: sipa-auth
+        path: ./artifacts
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-east-1  
+
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v1
+
+    - name: Automatic Tagging of Releases
+      id: increment-git-tag
+      run: |
+        chmod +x version.sh
+        ./version.sh -v Release
+      env:
+        GIT_AUTHOR_NAME: github-actions
+        GIT_AUTHOR_EMAIL: github-actions@github.com
+
+    - name: Build, Tag, and Push the Image to Amazon ECR
+      id: build-image
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        ECR_REPOSITORY: ${{ inputs.ecr-repository }}
+        IMAGE_TAG: ${{ steps.increment-git-tag.outputs.git-tag }}
+      run: |
+        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG

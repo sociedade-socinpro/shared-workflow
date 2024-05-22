@@ -84,11 +84,17 @@ jobs:
       id: login-ecr
       uses: aws-actions/amazon-ecr-login@v1
 
-    - name: Automatic Tagging of Releases
+    - name: Get type of commit
+      id: get_commit_message
+      run: |
+        COMMIT_MESSAGE=$(git log -1 --pretty=%B)
+        echo "commit_message=$COMMIT_MESSAGE" >> $COMMIT_MSG
+
+    - name: Automatic Tagging of Releases 
       id: increment-git-tag
       run: |
         chmod +x version.sh
-        ./version.sh -v Release
+        ./version.sh -v $COMMIT_MSG
       env:
         GIT_AUTHOR_NAME: github-actions
         GIT_AUTHOR_EMAIL: github-actions@github.com

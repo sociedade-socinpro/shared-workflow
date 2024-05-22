@@ -84,17 +84,30 @@ jobs:
       id: login-ecr
       uses: aws-actions/amazon-ecr-login@v1
 
-    - name: Get type of commit
+    - name: Get the last commit message
       id: get_commit_message
       run: |
         COMMIT_MESSAGE=$(git log -1 --pretty=%B)
-        echo "commit_message=$COMMIT_MESSAGE" >> $COMMIT_MSG
+        echo "commit_message=$COMMIT_MESSAGE" >> $GITHUB_ENV
+
+    - name: Determine commit type
+      id: determine_commit_type
+      run: |
+        if [[ "${{ env.commit_message }}" == release:* ]]; then
+          echo "commit_type=Release" >> $GITHUB_ENV
+        elif [[ "${{ env.commit_message }}" == hotfix:* ]]; then
+          echo "commit_type=Hotfix" >> $GITHUB_ENV
+        elif [[ "${{ env.commit_message }}" == patch:* ]]; then
+          echo "commit_type=Patch" >> $GITHUB_ENV
+        else
+          echo "commit_type=Release" >> $GITHUB_ENV
+        fi
 
     - name: Automatic Tagging of Releases 
       id: increment-git-tag
       run: |
         chmod +x version.sh
-        ./version.sh -v $COMMIT_MSG
+        ./version.sh -v ${{ env.commit_type }}
       env:
         GIT_AUTHOR_NAME: github-actions
         GIT_AUTHOR_EMAIL: github-actions@github.com

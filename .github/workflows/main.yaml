@@ -14,6 +14,13 @@ on:
       ecr-repository: 
         required: true
         type: string
+    secrets:
+      SONAR_TOKEN:
+        required: true
+      AWS_ACCESS_KEY_ID: 
+        required: true
+      AWS_SECRET_ACCESS_KEY:
+        required: true
 jobs: 
   build-applications:
     name: Build and create artifact

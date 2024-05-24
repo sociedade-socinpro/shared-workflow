@@ -42,7 +42,7 @@ jobs:
     - name: Upload JAR Artifact
       uses: actions/upload-artifact@v3
       with:
-        name: sipa-auth
+        name: sipa-app
         path: target/*.jar
 
   code-evaluation: 

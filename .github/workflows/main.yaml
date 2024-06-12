@@ -35,9 +35,18 @@ jobs:
         java-version: '17'
         cache: 'maven'
 
+    - name: Set build paramter
+      id: set-java-build-option
+      run: |
+        if [ " ${{ inputs.brach }}" = "main" ]; then
+          echo "::set-output name=JAVA_BUILD_PROFILE::-Dspring.profiles.active=production"
+        else
+          echo "::set-output name=JAVA_BUILD_PROFILE::-Dspring.profiles.active=development"
+        fi
+
     - name: Build with Maven
       #run: mvn -B package --file pom.xml
-      run: mvn -B package -DskipTests --file pom.xml
+      run: mvn -B package -DskipTests ${{ steps.set-java-build-option.outputs.JAVA_BUILD_PROFILE }} --file pom.xml
 
     - name: Upload JAR Artifact
       uses: actions/upload-artifact@v3

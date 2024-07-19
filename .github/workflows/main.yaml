@@ -66,7 +66,8 @@ jobs:
       uses: sonarsource/sonarqube-scan-action@v1
       env:
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        SONAR_HOST_URL: "http://ec2-3-226-198-174.compute-1.amazonaws.com:9000"
+        SONAR_HOST_URL: "https://sonar.socinpro.org.br"
+        #SONAR_HOST_URL: "http://ec2-3-226-198-174.compute-1.amazonaws.com:9000"
 
   push-to-ecr:
     name: Push to ECR

@@ -39,7 +39,7 @@ jobs:
       id: set-java-build-option
       run: |
         if [ "${{ inputs.branch }}" = "main" ]; then
-          echo "::set-output name=JAVA_BUILD_PROFILE::-Dspring.profiles.active=production"
+          echo "::set-output name=JAVA_BUILD_PROFILE::-Dspring.profiles.active=staging"
         else
           echo "::set-output name=JAVA_BUILD_PROFILE::-Dspring.profiles.active=development"
         fi
